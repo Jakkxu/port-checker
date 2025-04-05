@@ -1,5 +1,12 @@
 # Port Checker
 
+- [Description](#description)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Implementation Details](#implementation-details)
+- [Requirements](#requirements)
+
 ## Description
 
 Port Checker is a user-friendly utility designed to help you view all listening ports on your system and manage the processes associated with them. It provides a colorful terminal interface with various command options for both Windows and Linux/Unix environments.
