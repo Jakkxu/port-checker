@@ -270,7 +270,6 @@ parse_command() {
         echo -e "${CYAN}Exiting...${NC}"
         sleep 1
         clear
-        neofetch --source ~/logo/logo1.txt
         exit 0
     elif [ "$command" != "kill" ] && [ "$command" != "fd" ] && [ "$command" != "full-detail" ]; then
         display_header
