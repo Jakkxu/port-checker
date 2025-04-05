@@ -1,9 +1,5 @@
 # Port Checker
 
-A powerful utility for monitoring and managing active network ports with an interactive command-line interface.
-
-![Port Checker Screenshot](https://i.imgur.com/YourScreenshot.png)
-
 ## Description
 
 Port Checker is a command-line tool that helps you view and manage listening network ports on your system. It provides a user-friendly interface with colored output and various command options for identifying and killing processes running on specific ports.
