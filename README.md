@@ -1,9 +1,5 @@
 # Port Checker
 
-A cross-platform command-line utility to monitor and manage network ports on your system.
-
-![Port Checker Banner](https://img.shields.io/badge/Port%20Checker-Monitor%20%26%20Manage%20Ports-blue)
-
 ## Description
 
 Port Checker is a user-friendly utility designed to help you view all listening ports on your system and manage the processes associated with them. It provides a colorful terminal interface with various command options for both Windows and Linux/Unix environments.
