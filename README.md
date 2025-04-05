@@ -10,7 +10,6 @@ Port Checker is a user-friendly utility designed to help you view all listening 
 - **Detailed Port Information**: Shows comprehensive details about specified ports including process data and network connections
 - **Process Termination**: Easily kill processes running on specific ports
 - **Flexible Port Selection**: Select ports individually, in ranges, as comma-separated lists, or all ports with exceptions
-- **Cross-Platform Support**: Works on both Windows and Linux/Unix systems
 
 ## Installation
 
