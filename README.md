@@ -20,9 +20,6 @@ Port Checker is a user-friendly utility designed to help you view all listening 
 
 ## Installation
 
-### Windows
-Simply download the `port_checker.bat` file and run it from the command prompt with administrator privileges.
-
 ### Linux/Unix
 1. Download the `port_checker.sh` file
 2. Make it executable: `chmod +x port_checker.sh`
@@ -83,10 +80,6 @@ The implementation differs between platforms:
 - **Linux/Unix**: Uses `lsof`, `ps`, and `netstat` for the same functionality
 
 ## Requirements
-
-### Windows
-- Windows 7 or newer
-- Administrator privileges for killing processes
 
 ### Linux/Unix
 - `lsof` utility (installed by default on most distributions)
