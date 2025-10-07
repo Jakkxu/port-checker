@@ -24,7 +24,6 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Function to display the header
 display_header() {
     clear
     echo -e "${CYAN}"
@@ -37,7 +36,6 @@ display_header() {
     echo -e "${NC}"
 }
 
-# Function to display help information
 display_help() {
     display_header
     echo -e "${CYAN}=============== HELP ===============${NC}"
@@ -76,17 +74,13 @@ display_help() {
     echo -e "\n${YELLOW}Type 'help' or 'h' for available commands${NC}"
 }
 
-# Function to check running ports
 check_ports() {
     display_header
     echo -e "${CYAN}======= CHECKING ACTIVE PORTS =======${NC}"
-    # Get list of listening TCP ports
     ports=($(lsof -i -P -n | grep LISTEN | awk '{print $9}' | cut -d':' -f2 | sort -n | uniq))
-    # Display the ports
     if [ ${#ports[@]} -eq 0 ]; then
         echo -e "${YELLOW}No active ports found.${NC}"
     else
-        # Print table header
         echo -e "ID   PORT     HOST            PROCESS                  "
         echo -e "------------------------------------------------------------"
         
@@ -95,13 +89,11 @@ check_ports() {
             pid=$(lsof -i :$port -t)
             command=$(ps -p $pid -o comm= 2>/dev/null)
             host=$(lsof -i :$port -P -n | grep LISTEN | awk '{print $9}' | cut -d':' -f1 | head -1)
-            
-            # If host is "*", leave it as is, otherwise use the actual host value
+
             if [ "$host" != "*" ]; then
                 host="127.0.0.1"
             fi
-            
-            # Format the output as a table row with fixed column widths
+
             printf "[%d] %-8s %-15s %-25s\n" "$((i+1))" "$port" "$host" "$command"
         done
     fi
@@ -109,7 +101,6 @@ check_ports() {
     echo -e "\n${YELLOW}Type 'help' or 'h' for available commands${NC}"
 }
 
-# Function to show full details of ports
 show_full_details() {
     local port_spec=$1
     local except_spec=$2
@@ -132,7 +123,6 @@ show_full_details() {
 
     if [ "$port_spec" == "all" ]; then
         echo -e "${CYAN}Processing all ports for details...${NC}"
-        # All indices from 1 to n
         for i in "${!ports[@]}"; do
             indices_to_show+=($((i+1)))
         done
@@ -244,7 +234,6 @@ show_full_details() {
     echo -e "\n${YELLOW}Type 'help' or 'h' for available commands${NC}"
 }
 
-# Function to parse command arguments
 parse_command() {
     local input="$1"
     local command=""
@@ -341,7 +330,6 @@ parse_command() {
             echo -e "\n${YELLOW}Type 'help' or 'h' for available commands${NC}"
         fi
     elif [ "$command" == "fd" ] || [ "$command" == "full-detail" ]; then
-        # Validate the options for fd command
         if [ "$all" == "true" ]; then
             show_full_details "all" "$except"
         elif [ -n "$ports" ]; then
@@ -354,7 +342,6 @@ parse_command() {
     fi
 }
 
-# Function to kill ports based on user input with new command syntax
 kill_ports_new() {
     local port_spec=$1
     local except_spec=$2
@@ -484,7 +471,6 @@ kill_ports_new() {
     check_ports
 }
 
-# Main loop to keep the script running
 main_loop() {
     check_ports
     
