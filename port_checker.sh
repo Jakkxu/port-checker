@@ -46,26 +46,30 @@ display_help() {
     
     echo -e "${YELLOW}Available commands:${NC}"
     echo -e "  ${GREEN}kill${NC} - Kill ports with options"
-    echo -e "    ${CYAN}-p, --port${NC} PORT_SPEC - Specify ports to kill (required unless -a is used)"
-    echo -e "    ${CYAN}-e, --except${NC} PORT_SPEC - Specify ports to exclude"
-    echo -e "    ${CYAN}-a, --all${NC} - Kill all ports"
+    echo -e "    ${CYAN}-i, --index${NC} INDEX_SPEC - Specify ports by index to kill (required unless -a is used)"
+    echo -e "    ${CYAN}-p, --port${NC} PORT_SPEC - Specify ports by port number to kill (required unless -a is used)"
+    echo -e "    ${CYAN}-e, --except${NC} SPEC - Specify ports to exclude"
+    echo -e "    ${CYAN}-a, --all${NC} - Kill all ports (use with -i or -p)"
     
-    echo -e "  ${GREEN}fd${NC} or ${GREEN}full-detail${NC} - Show full details of ports"
-    echo -e "    ${CYAN}-p, --port${NC} PORT_SPEC - Specify ports to show details (required unless -a is used)"
-    echo -e "    ${CYAN}-e, --except${NC} PORT_SPEC - Specify ports to exclude"
-    echo -e "    ${CYAN}-a, --all${NC} - Show all ports"
+    echo -e "  ${GREEN}d${NC} or ${GREEN}detail${NC} - Show full details of ports"
+    echo -e "    ${CYAN}-i, --index${NC} INDEX_SPEC - Specify ports by index to show details (required unless -a is used)"
+    echo -e "    ${CYAN}-p, --port${NC} PORT_SPEC - Specify ports by port number to show details (required unless -a is used)"
+    echo -e "    ${CYAN}-e, --except${NC} SPEC - Specify ports to exclude"
+    echo -e "    ${CYAN}-a, --all${NC} - Show all ports (use with -i or -p)"
     
     echo -e "  Examples:"
-    echo -e "    ${GREEN}kill -p 1${NC} - Kill port number 1"
-    echo -e "    ${GREEN}kill -p 1,5,7${NC} - Kill ports 1, 5, and 7"
-    echo -e "    ${GREEN}kill -a${NC} - Kill all ports"
-    echo -e "    ${GREEN}kill -p -a${NC} - Also kills all ports (same as kill -a)"
-    echo -e "    ${GREEN}kill -p 1-5${NC} - Kill ports 1 through 5"
-    echo -e "    ${GREEN}kill -p 1-10 -e 5,8,9${NC} - Kill ports 1-10 except 5,8,9"
-    echo -e "    ${GREEN}kill -a -e 2-5${NC} - Kill all ports except 2 through 5"
-    echo -e "    ${GREEN}fd -p 1${NC} - Show full details of port 1"
-    echo -e "    ${GREEN}fd -a${NC} - Show full details of all ports"
-    echo -e "    ${GREEN}full-detail -p 1-3${NC} - Show details for ports 1 through 3"
+    echo -e "    ${GREEN}kill -i 1${NC} - Kill port at index 1"
+    echo -e "    ${GREEN}kill -i 1,5,7${NC} - Kill ports at indices 1, 5, and 7"
+    echo -e "    ${GREEN}kill -i 1-5${NC} - Kill ports at indices 1 through 5"
+    echo -e "    ${GREEN}kill -i -a${NC} - Kill all ports (by index)"
+    echo -e "    ${GREEN}kill -p 8000${NC} - Kill port 8000"
+    echo -e "    ${GREEN}kill -p 8000,9000,8080${NC} - Kill ports 8000, 9000, and 8080"
+    echo -e "    ${GREEN}kill -p 8000-9000${NC} - Kill ports 8000 through 9000"
+    echo -e "    ${GREEN}kill -p 8000-9000 -e 8080,8700${NC} - Kill ports 8000-9000 except 8080,8700"
+    echo -e "    ${GREEN}kill -p -a${NC} - Kill all ports (by port number)"
+    echo -e "    ${GREEN}d -i 1${NC} - Show full details of port at index 1"
+    echo -e "    ${GREEN}d -p 8000${NC} - Show full details of port 8000"
+    echo -e "    ${GREEN}d -p -a${NC} - Show full details of all ports"
     echo -e ""
     echo -e "  ${GREEN}r${NC} or ${GREEN}reface${NC} - Reload/refresh port list"
     echo -e "  ${GREEN}h${NC} or ${GREEN}help${NC} - Display this help information"
@@ -81,24 +85,77 @@ check_ports() {
     if [ ${#ports[@]} -eq 0 ]; then
         echo -e "${YELLOW}No active ports found.${NC}"
     else
-        echo -e "ID   PORT     HOST            PROCESS                  "
-        echo -e "------------------------------------------------------------"
+        echo -e "ID   PORT     HOST       USER        PROCESS       PROTOCOL"
+        echo -e "---------------------------------------------------------------"
         
         for i in "${!ports[@]}"; do
             port=${ports[$i]}
-            pid=$(lsof -i :$port -t)
+            lsof_info=$(lsof -i :$port -P -n 2>/dev/null | grep LISTEN | head -1)
+            
+            host=$(echo "$lsof_info" | awk '{print $9}' | cut -d':' -f1)
+            user=$(echo "$lsof_info" | awk '{print $3}')
+            pid=$(echo "$lsof_info" | awk '{print $2}')
             command=$(ps -p $pid -o comm= 2>/dev/null)
-            host=$(lsof -i :$port -P -n | grep LISTEN | awk '{print $9}' | cut -d':' -f1 | head -1)
-
-            if [ "$host" != "*" ]; then
-                host="127.0.0.1"
+            
+            protocol=$(ss -tuln 2>/dev/null | grep ":$port " | awk '{print $1}' | head -1)
+            
+            if [ -z "$protocol" ]; then
+                protocol="-"
+            else
+                protocol=$(echo "$protocol" | tr '[:lower:]' '[:upper:]')
             fi
 
-            printf "[%d] %-8s %-15s %-25s\n" "$((i+1))" "$port" "$host" "$command"
+            if [ "$host" == "*" ]; then
+                host="*"
+            fi
+            
+            case "$port" in
+                22|80|443|3306|5432|5900|8080|8443|27017|6379|3389)
+                    printf "[%-1d] ${RED}%-8s${NC} %-10s %-12s %-14s %s\n" "$((i+1))" "$port" "$host" "$user" "$command" "$protocol"
+                    ;;
+                *)
+                    printf "[%-1d] %-8s %-10s %-12s %-14s %s\n" "$((i+1))" "$port" "$host" "$user" "$command" "$protocol"
+                    ;;
+            esac
         done
     fi
     
     echo -e "\n${YELLOW}Type 'help' or 'h' for available commands${NC}"
+}
+
+# Helper function to convert port numbers to indices
+convert_port_to_indices() {
+    local port_spec=$1
+    shift
+    local ports_array=("$@")
+    local indices=()
+    
+    # Handle ranges like 8000-9000
+    if [[ "$port_spec" =~ ^([0-9]+)-([0-9]+)$ ]]; then
+        start="${BASH_REMATCH[1]}"
+        end="${BASH_REMATCH[2]}"
+        for ((port=$start; port<=$end; port++)); do
+            for i in "${!ports_array[@]}"; do
+                if [ "${ports_array[$i]}" -eq "$port" ]; then
+                    indices+=($((i+1)))
+                    break
+                fi
+            done
+        done
+    # Handle comma-separated list like 8000,9000
+    elif [[ "$port_spec" =~ ^[0-9]+(,[0-9]+)*$ ]]; then
+        IFS=',' read -ra port_list <<< "$port_spec"
+        for port in "${port_list[@]}"; do
+            for i in "${!ports_array[@]}"; do
+                if [ "${ports_array[$i]}" -eq "$port" ]; then
+                    indices+=($((i+1)))
+                    break
+                fi
+            done
+        done
+    fi
+    
+    echo "${indices[@]}"
 }
 
 show_full_details() {
@@ -106,7 +163,7 @@ show_full_details() {
     local except_spec=$2
 
     display_header
-    echo -e "${CYAN}=============== FULL DETAILS ===============${NC}"
+    echo -e "${CYAN}=============== DETAILS ===============${NC}"
 
     ports=($(lsof -i -P -n | grep LISTEN | awk '{print $9}' | cut -d':' -f2 | sort -n | uniq))
 
@@ -121,7 +178,17 @@ show_full_details() {
     local indices_to_show=()
     local indices_to_except=()
 
-    if [ "$port_spec" == "all" ]; then
+    # Check if using port numbers instead of indices
+    if [[ "$port_spec" == port:* ]]; then
+        port_spec="${port_spec#port:}"
+        indices_array=($(convert_port_to_indices "$port_spec" "${ports[@]}"))
+        indices_to_show=("${indices_array[@]}")
+    elif [ "$port_spec" == "all_port" ]; then
+        echo -e "${CYAN}Processing all ports for details...${NC}"
+        for i in "${!ports[@]}"; do
+            indices_to_show+=($((i+1)))
+        done
+    elif [ "$port_spec" == "all_index" ]; then
         echo -e "${CYAN}Processing all ports for details...${NC}"
         for i in "${!ports[@]}"; do
             indices_to_show+=($((i+1)))
@@ -215,16 +282,18 @@ show_full_details() {
         pid=$(lsof -i :$port -t 2>/dev/null)
         if [ -n "$pid" ]; then
             echo -e "\n${GREEN}Process Details:${NC}"
-            ps_output=$(ps -p $pid -f)
+            pid_list=$(echo "$pid" | tr '\n' ',' | sed 's/,$//')
+            ps_output=$(ps -p "$pid_list" -f 2>/dev/null)
             echo -e "$ps_output"
             
             echo -e "\n${GREEN}Process Tree:${NC}"
-            pstree_output=$(pstree -p $pid 2>/dev/null || echo "pstree command not available")
+            first_pid=$(echo "$pid" | head -n1)
+            pstree_output=$(pstree -p $first_pid 2>/dev/null || echo "pstree command not available")
             echo -e "$pstree_output"
             
             echo -e "\n${GREEN}Network Connections:${NC}"
-            netstat_output=$(netstat -tuln | grep ":$port " || echo "No netstat data available")
-            echo -e "$netstat_output"
+            ss_output=$(ss -tuln | grep ":$port " 2>/dev/null || echo "No network data available")
+            echo -e "$ss_output"
         else
             echo -e "\n${RED}No active process found for this port${NC}"
         fi
@@ -240,6 +309,8 @@ parse_command() {
     local ports=""
     local except=""
     local all=false
+    local use_index=false
+    local use_port=false
     
     read -ra args <<< "$input"
     
@@ -260,7 +331,7 @@ parse_command() {
         sleep 1
         clear
         exit 0
-    elif [ "$command" != "kill" ] && [ "$command" != "fd" ] && [ "$command" != "full-detail" ]; then
+    elif [ "$command" != "kill" ] && [ "$command" != "d" ] && [ "$command" != "detail" ]; then
         display_header
         echo -e "${RED}Unknown command: $command${NC}"
         echo -e "${YELLOW}Type 'help' or 'h' for available commands${NC}"
@@ -268,14 +339,28 @@ parse_command() {
         return
     fi
     
-    if [[ "$input" =~ ^(kill|fd|full-detail)\ +-p\ +-a$ ]]; then
+    # Handle -i -a and -p -a cases
+    if [[ "$input" =~ ^(kill|d|detail)\ +-i\ +-a$ ]]; then
         echo -e "${CYAN}Running ${command} all command...${NC}"
         case "$command" in
             kill)
-                kill_ports_new "all" "" ""
+                kill_ports_new "all_index" "" ""
                 ;;
-            fd|full-detail)
-                show_full_details "all" "" 
+            d|detail)
+                show_full_details "all_index" "" 
+                ;;
+        esac
+        return
+    fi
+    
+    if [[ "$input" =~ ^(kill|d|detail)\ +-p\ +-a$ ]]; then
+        echo -e "${CYAN}Running ${command} all command...${NC}"
+        case "$command" in
+            kill)
+                kill_ports_new "all_port" "" ""
+                ;;
+            d|detail)
+                show_full_details "all_port" "" 
                 ;;
         esac
         return
@@ -284,7 +369,20 @@ parse_command() {
     i=1
     while [ $i -lt ${#args[@]} ]; do
         case "${args[$i]}" in
+            -i|--index)
+                use_index=true
+                i=$((i+1))
+                if [ $i -lt ${#args[@]} ]; then
+                    ports="${args[$i]}"
+                else
+                    display_header
+                    echo -e "${RED}Missing argument for -i/--index${NC}"
+                    echo -e "\n${YELLOW}Type 'help' or 'h' for available commands${NC}"
+                    return
+                fi
+                ;;
             -p|--port)
+                use_port=true
                 i=$((i+1))
                 if [ $i -lt ${#args[@]} ]; then
                     ports="${args[$i]}"
@@ -321,22 +419,38 @@ parse_command() {
     
     if [ "$command" == "kill" ]; then
         if [ "$all" == "true" ]; then
-            kill_ports_new "all" "$except" "${ports[@]}"
+            if [ "$use_port" == "true" ]; then
+                kill_ports_new "all_port" "$except" ""
+            else
+                kill_ports_new "all_index" "$except" ""
+            fi
         elif [ -n "$ports" ]; then
-            kill_ports_new "$ports" "$except" "${ports[@]}"
+            if [ "$use_port" == "true" ]; then
+                kill_ports_new "port:$ports" "$except" ""
+            else
+                kill_ports_new "$ports" "$except" ""
+            fi
         else
             display_header
-            echo -e "${RED}Missing port specification. Use -p or -a option.${NC}"
+            echo -e "${RED}Missing port specification. Use -i, -p, or -a option.${NC}"
             echo -e "\n${YELLOW}Type 'help' or 'h' for available commands${NC}"
         fi
-    elif [ "$command" == "fd" ] || [ "$command" == "full-detail" ]; then
+    elif [ "$command" == "d" ] || [ "$command" == "detail" ]; then
         if [ "$all" == "true" ]; then
-            show_full_details "all" "$except"
+            if [ "$use_port" == "true" ]; then
+                show_full_details "all_port" "$except"
+            else
+                show_full_details "all_index" "$except"
+            fi
         elif [ -n "$ports" ]; then
-            show_full_details "$ports" "$except"
+            if [ "$use_port" == "true" ]; then
+                show_full_details "port:$ports" "$except"
+            else
+                show_full_details "$ports" "$except"
+            fi
         else
             display_header
-            echo -e "${RED}Missing port specification. Use -p or -a option.${NC}"
+            echo -e "${RED}Missing port specification. Use -i, -p, or -a option.${NC}"
             echo -e "\n${YELLOW}Type 'help' or 'h' for available commands${NC}"
         fi
     fi
@@ -363,7 +477,16 @@ kill_ports_new() {
     
     echo -e "${CYAN}Found ${#ports[@]} active ports.${NC}"
     
-    if [ "$port_spec" == "all" ]; then
+    if [[ "$port_spec" == port:* ]]; then
+        port_spec="${port_spec#port:}"
+        indices_array=($(convert_port_to_indices "$port_spec" "${ports[@]}"))
+        indices_to_kill=("${indices_array[@]}")
+    elif [ "$port_spec" == "all_port" ]; then
+        echo -e "${CYAN}Processing all ports for killing...${NC}"
+        for i in "${!ports[@]}"; do
+            indices_to_kill+=($((i+1)))
+        done
+    elif [ "$port_spec" == "all_index" ]; then
         echo -e "${CYAN}Processing all ports for killing...${NC}"
         for i in "${!ports[@]}"; do
             indices_to_kill+=($((i+1)))
