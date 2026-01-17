@@ -13,12 +13,17 @@ Port Checker is a user-friendly utility designed to help you view all listening 
 
 ## Features
 
-- **View Active Ports**: Lists all active listening ports with their associated processes
+- **View Active Ports**: Lists all active listening ports with their associated processes, protocol type (TCP/UDP), and highlighted important ports
+- **Dual Selection Modes**: Select ports by index (position in list) or by actual port number
 - **Detailed Port Information**: Shows comprehensive details about specified ports including process data and network connections
 - **Process Termination**: Easily kill processes running on specific ports
 - **Flexible Port Selection**: Select ports individually, in ranges, as comma-separated lists, or all ports with exceptions
+- **Important Port Highlighting**: Automatically highlights critical ports (SSH:22, HTTP:80, HTTPS:443, MySQL:3306, PostgreSQL:5432, etc.) in red
 
 ## Installation
+
+### Windows
+Simply download the `port_checker.bat` file and run it from the command prompt with administrator privileges.
 
 ### Linux/Unix
 1. Download the `port_checker.sh` file
@@ -36,40 +41,58 @@ The tool supports the following commands:
 | `r` or `reface` | Refresh the port list |
 | `h` or `help` | Display help information |
 | `kill` | Kill processes on specified ports |
-| `fd` or `full-detail` | Show detailed information about specified ports |
+| `d` or `detail` | Show detailed information about specified ports |
 | `exit`, `quit`, `q`, or `e` | Exit the program |
 
 ### Options
 
-For both the `kill` and `fd`/`full-detail` commands:
+For both the `kill` and `d`/`detail` commands, you can use either:
 
 | Option | Description |
 |--------|-------------|
-| `-p, --port PORT_SPEC` | Specify ports to process (required unless -a is used) |
-| `-e, --except PORT_SPEC` | Specify ports to exclude |
-| `-a, --all` | Select all ports |
+| `-i, --index INDEX_SPEC` | Specify ports by their index in the list (1, 2, 3, etc.) |
+| `-p, --port PORT_SPEC` | Specify ports by their actual port number (8000, 9000, etc.) |
+| `-e, --except SPEC` | Specify ports to exclude from the operation |
+| `-a, --all` | Select all ports (use with `-i` or `-p`) |
 
-### PORT_SPEC Format
+### SPEC Format
 
-The PORT_SPEC parameter can be specified in several formats:
+Both INDEX_SPEC and PORT_SPEC parameters can be specified in several formats:
 
-- Single port: `3000`
-- Comma-separated list: `80,443,8080`
-- Range: `3000-3005`
+- Single value: `1` or `8000`
+- Comma-separated list: `1,5,7` or `80,443,8080`
+- Range: `1-5` or `8000-9000`
 
 ### Examples
 
-```
-kill -p 1             # Kill process on port number 1
-kill -p 1,5,7         # Kill processes on ports 1, 5, and 7
-kill -a               # Kill all port processes
-kill -p 1-5           # Kill processes on ports 1 through 5
-kill -p 1-10 -e 5,8,9 # Kill processes on ports 1-10 except 5, 8, and 9
-kill -a -e 2-5        # Kill all port processes except ports 2 through 5
+#### Using Index (-i option)
 
-fd -p 1               # Show full details of port 1
-fd -a                 # Show full details of all ports
-full-detail -p 1-3    # Show details for ports 1 through 3
+```
+kill -i 1             # Kill port at index 1
+kill -i 1,5,7         # Kill ports at indices 1, 5, and 7
+kill -i 1-5           # Kill ports at indices 1 through 5
+kill -i -a            # Kill all ports (by index)
+
+d -i 1                # Show details of port at index 1
+detail -i 1-3         # Show details for ports at indices 1 through 3
+detail -i -a          # Show details of all ports
+```
+
+#### Using Port Number (-p option)
+
+```
+kill -p 8000          # Kill port 8000
+kill -p 8000,9000,8080       # Kill ports 8000, 9000, and 8080
+kill -p 8000-9000     # Kill ports 8000 through 9000
+kill -p 8000-9000 -e 8080,8700    # Kill ports 8000-9000 except 8080 and 8700
+kill -p 8000-9000 -e 8080-8500    # Kill ports 8000-9000 except 8080-8500
+kill -p -a            # Kill all ports (by port number)
+kill -p -a -e 8080-8500    # Kill all ports except 8080-8500
+
+d -p 8000             # Show details of port 8000
+d -p 80,443           # Show details of ports 80 and 443
+detail -p 8000-9000   # Show details for ports 8000 through 9000
+detail -p -a          # Show details of all ports
 ```
 
 ## Implementation Details
@@ -80,6 +103,10 @@ The implementation differs between platforms:
 - **Linux/Unix**: Uses `lsof`, `ps`, and `netstat` for the same functionality
 
 ## Requirements
+
+### Windows
+- Windows 7 or newer
+- Administrator privileges for killing processes
 
 ### Linux/Unix
 - `lsof` utility (installed by default on most distributions)
