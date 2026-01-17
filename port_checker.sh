@@ -1,20 +1,34 @@
 #!/bin/bash
+
+set -euo pipefail
+IFS=$'\n\t'
+
 #####################################################################################
 ##                                                                                 ##
 ## DESCRIPTION:                                                                    ##
-##   This script allows you to view all listening ports on your system             ##
-##   and kill processes by port number. It provides a user-friendly interface      ##
-##   with colored output and various command options.                              ##
+##   Port Checker - A comprehensive utility for viewing and managing active        ##
+##   listening ports on your system. Kill processes by port number or index,       ##
+##   view detailed port information, and manage network connections with ease.     ##
+##   Provides a user-friendly interactive interface with colored output and        ##
+##   full readline support for command history and editing.                        ##
 ##                                                                                 ##
 ## FUNCTIONS:                                                                      ##
 ##   display_header - Clears the screen and displays the ASCII art logo            ##
 ##   display_help - Shows all available commands and usage instructions            ##
-##   check_ports - Lists all active listening ports with their processes           ##
-##   show_full_details - Shows detailed information about specified ports          ##
+##   check_ports - Lists all active listening ports with their metadata            ##
+##   show_full_details - Shows comprehensive information about specified ports     ##
 ##   kill_ports_new - Terminates processes running on specified ports              ##
-##   parse_command - Processes user input and executes the appropriate function    ##
-##   main_loop - Main entry point that starts the command loop                     ##
-##                                                                                 ##   
+##   parse_command - Processes and validates user input commands                   ##
+##   convert_port_to_indices - Converts port numbers to their list indices         ##
+##   main_loop - Main entry point with readline history support                    ##
+##                                                                                 ##
+## NAVIGATION:                                                                     ##
+##   Up/Down Arrows         Navigate through command history                       ##
+##   Left/Right Arrows      Move cursor in command line                            ##
+##   Ctrl+A / Ctrl+E        Jump to start/end of line                              ##
+##   Alt+B / Alt+F          Move cursor by word                                    ##
+##   Ctrl+D / Ctrl+H        Delete forward/backward                                ##
+##                                                                                 ##
 #####################################################################################
 
 RED='\033[0;31m'
@@ -123,14 +137,12 @@ check_ports() {
     echo -e "\n${YELLOW}Type 'help' or 'h' for available commands${NC}"
 }
 
-# Helper function to convert port numbers to indices
 convert_port_to_indices() {
     local port_spec=$1
     shift
     local ports_array=("$@")
     local indices=()
-    
-    # Handle ranges like 8000-9000
+
     if [[ "$port_spec" =~ ^([0-9]+)-([0-9]+)$ ]]; then
         start="${BASH_REMATCH[1]}"
         end="${BASH_REMATCH[2]}"
@@ -142,7 +154,6 @@ convert_port_to_indices() {
                 fi
             done
         done
-    # Handle comma-separated list like 8000,9000
     elif [[ "$port_spec" =~ ^[0-9]+(,[0-9]+)*$ ]]; then
         IFS=',' read -ra port_list <<< "$port_spec"
         for port in "${port_list[@]}"; do
@@ -178,7 +189,6 @@ show_full_details() {
     local indices_to_show=()
     local indices_to_except=()
 
-    # Check if using port numbers instead of indices
     if [[ "$port_spec" == port:* ]]; then
         port_spec="${port_spec#port:}"
         indices_array=($(convert_port_to_indices "$port_spec" "${ports[@]}"))
@@ -338,8 +348,7 @@ parse_command() {
         echo -e "\n${YELLOW}Type 'help' or 'h' for available commands${NC}"
         return
     fi
-    
-    # Handle -i -a and -p -a cases
+
     if [[ "$input" =~ ^(kill|d|detail)\ +-i\ +-a$ ]]; then
         echo -e "${CYAN}Running ${command} all command...${NC}"
         case "$command" in
@@ -597,8 +606,15 @@ kill_ports_new() {
 main_loop() {
     check_ports
     
+    local HISTFILE="${HOME}/.port_checker_history"
+    
     while true; do
-        read -p "-> $ " input
+        read -e -p "-> $ " input
+
+        if [ -n "$input" ]; then
+            history -s "$input" 2>/dev/null
+        fi
+        
         parse_command "$input"
     done
 }
