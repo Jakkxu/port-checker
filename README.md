@@ -9,7 +9,7 @@
 
 ## Description
 
-Port Checker is a user-friendly utility designed to help you view all listening ports on your system and manage the processes associated with them. It provides a colorful terminal interface with various command options for both Windows and Linux/Unix environments.
+Port Checker is a user-friendly Linux utility designed to help you view all listening ports on your system and manage the processes associated with them. It provides a colorful terminal interface with various command options for managing network ports and processes.
 
 ## Features
 
@@ -22,13 +22,16 @@ Port Checker is a user-friendly utility designed to help you view all listening 
 
 ## Installation
 
-### Windows
-Simply download the `port_checker.bat` file and run it from the command prompt with administrator privileges.
-
 ### Linux/Unix
 1. Download the `port_checker.sh` file
 2. Make it executable: `chmod +x port_checker.sh`
 3. Run it: `./port_checker.sh`
+
+### Quick Start
+```bash
+cd /path/to/port-checker
+./port_checker.sh
+```
 
 ## Usage
 
@@ -97,18 +100,35 @@ detail -p -a          # Show details of all ports
 
 ## Implementation Details
 
-The implementation differs between platforms:
+This Linux utility uses the following tools to gather port and process information:
 
-- **Windows**: Uses `netstat` and `tasklist` to gather port and process information
-- **Linux/Unix**: Uses `lsof`, `ps`, and `netstat` for the same functionality
+- **lsof** - Lists open files and network connections
+- **ss** - Socket statistics for protocol detection (TCP/UDP)
+- **ps** - Process information retrieval
+- **pstree** - Process tree visualization
+
+All commands execute in a single bash script with full readline support for command history and line editing.
 
 ## Requirements
 
-### Windows
-- Windows 7 or newer
-- Administrator privileges for killing processes
-
 ### Linux/Unix
-- `lsof` utility (installed by default on most distributions)
-- `netstat` utility (usually part of net-tools)
-- Root privileges for killing certain processes (`sudo` may be required)
+- **Bash** 4.0 or newer
+- **lsof** utility (installed by default on most distributions)
+- **ss** utility (usually part of iproute2 package)
+- **ps** utility (part of procps package)
+- **pstree** utility (optional, for process tree visualization)
+- Root/sudo privileges for killing processes on privileged ports
+
+### Dependencies Installation
+
+For most distributions:
+```bash
+# Debian/Ubuntu
+sudo apt-get install lsof iproute2 procps psmisc
+
+# RedHat/CentOS/Fedora
+sudo yum install lsof iproute procps-ng psmisc
+
+# Alpine
+apk add lsof iproute2 procps psmisc
+```
