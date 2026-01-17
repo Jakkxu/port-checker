@@ -94,7 +94,7 @@ display_help() {
 
 check_ports() {
     display_header
-    echo -e "${CYAN}======= CHECKING ACTIVE PORTS =======${NC}"
+    # echo -e "${CYAN}======= CHECKING ACTIVE PORTS =======${NC}"
     ports=($(lsof -i -P -n | grep LISTEN | awk '{print $9}' | cut -d':' -f2 | sort -n | uniq))
     if [ ${#ports[@]} -eq 0 ]; then
         echo -e "${YELLOW}No active ports found.${NC}"
@@ -321,8 +321,11 @@ parse_command() {
     local all=false
     local use_index=false
     local use_port=false
+    local oldIFS="$IFS"
+    IFS=' '
     
     read -ra args <<< "$input"
+    IFS="$oldIFS"
     
     if [ ${#args[@]} -eq 0 ]; then
         return
@@ -345,7 +348,7 @@ parse_command() {
         display_header
         echo -e "${RED}Unknown command: $command${NC}"
         echo -e "${YELLOW}Type 'help' or 'h' for available commands${NC}"
-        echo -e "\n${YELLOW}Type 'help' or 'h' for available commands${NC}"
+
         return
     fi
 
